@@ -54,14 +54,18 @@ export class WishesController {
 
   @UseGuards(JwtGuard)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateWishDto: UpdateWishDto) {
-    return this.wishesService.updateOne(+id, updateWishDto);
+  update(
+    @Param('id') id: string,
+    @Body() updateWishDto: UpdateWishDto,
+    @Req() req,
+  ) {
+    return this.wishesService.updateOne(+id, updateWishDto, req.user);
   }
 
   @UseGuards(JwtGuard)
   @Delete(':id')
-  async remove(@Param('id') id: string) {
-    await this.wishesService.removeOne(+id);
+  async remove(@Param('id') id: string, @Req() req) {
+    await this.wishesService.removeOne(+id, req.user);
     return { message: 'Ваш подарок успешно удален' };
   }
 }

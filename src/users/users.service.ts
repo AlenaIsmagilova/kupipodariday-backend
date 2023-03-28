@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { HashService } from 'src/hash/hash.service';
 import { Repository } from 'typeorm';
@@ -20,12 +24,21 @@ export class UsersService {
       createUserDto.password,
     );
 
+    const userByEmail = await this.findOneByEmail(createUserDto.email);
+    const userByUsername = await this.findOneByUsername(createUserDto.username);
+
+    if (userByEmail || userByUsername) {
+      throw new ConflictException(
+        'Пользователь с таким email или username уже зарегистрирован',
+      );
+    }
+
     const createdUser = this.userRepository.create({
       ...createUserDto,
       password: hashedPass,
     });
 
-    const y = await this.userRepository.save(createdUser);
+    await this.userRepository.save(createdUser);
 
     return createdUser;
   }
@@ -56,6 +69,20 @@ export class UsersService {
   }
 
   async updateOne(id: number, updateUserDto: UpdateUserDto): Promise<User> {
+    const isExist = (await this.userRepository.findOne({
+      where: [
+        { email: updateUserDto.email },
+        { username: updateUserDto.username },
+      ],
+    }))
+      ? true
+      : false;
+
+    if (isExist)
+      throw new ConflictException(
+        'Пользователь с таким email или username уже зарегистрирован',
+      );
+
     await this.userRepository
       .createQueryBuilder()
       .update(User)

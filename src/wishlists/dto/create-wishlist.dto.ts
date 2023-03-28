@@ -1,13 +1,13 @@
-import { IsUrl, Length, Max } from 'class-validator';
+import { IsUrl, Length } from 'class-validator';
 
 export class CreateWishlistDto {
   @Length(2, 250, {
-    message: 'Название вишлиста должно содержать от 2 до 250 симловов',
+    message: 'Название вишлиста должно содержать от 2 до 250 символов',
   })
   name: string;
-  @Max(1500, {
+  @Length(1, 1500, {
     message:
-      'Слишком длинная строка. Описание не должно быть более 1500 симловов',
+      'Слишком короткая или слишком длинная строка. Описание не должно быть менее 1 и более 1500 символов',
   })
   description: string;
   @IsUrl({}, { message: 'Изображение должно быть ссылкой' })

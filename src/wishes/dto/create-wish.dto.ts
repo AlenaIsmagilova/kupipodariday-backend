@@ -26,12 +26,11 @@ export class CreateWishDto {
   @Min(1, { message: 'Сумма должна быть не менее 1 руб.' })
   price: number;
 
-  @IsOptional()
   @IsNotEmpty()
   @Length(1, 1024, {
     message: 'Описание должно содердать от 1 до 1024 символов',
   })
-  description: string;
+  description?: string;
 
   @IsOptional()
   raised: number;

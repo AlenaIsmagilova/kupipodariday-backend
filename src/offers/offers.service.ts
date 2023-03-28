@@ -42,9 +42,13 @@ export class OffersService {
       ...createOfferDto,
     });
 
-    await this.wishService.updateWish(ownWish.id, {
-      raised: ownWish.raised + createOfferDto.amount,
-    });
+    await this.wishService.updateOne(
+      ownWish.id,
+      {
+        raised: ownWish.raised + createOfferDto.amount,
+      },
+      user,
+    );
 
     const updatedWish = await this.wishService.findOne({
       where: { id: createOfferDto.itemId },

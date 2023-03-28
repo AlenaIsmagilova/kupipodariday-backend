@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/users/entities/user.entity';
 import { FindOneOptions, Repository } from 'typeorm';
@@ -11,7 +11,10 @@ export class WishesService {
   constructor(
     @InjectRepository(Wish)
     private wishRepository: Repository<Wish>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
   ) {}
+
   async create(createWishDto: CreateWishDto, user: User): Promise<Wish> {
     return await this.wishRepository.save({ owner: user, ...createWishDto });
   }
@@ -54,6 +57,15 @@ export class WishesService {
       description,
       owner: user,
     });
+
+    const isExist = await this.userRepository.findOne({
+      where: { wishes: { id: copiedWish.id } },
+    });
+
+    if (isExist) {
+      throw new ForbiddenException('Вы уже копировали себе этот подарок');
+    }
+
     const savedWish = await this.wishRepository.save(createdWish);
     await this.wishRepository.update(copiedWish.id, {
       copied: copiedWish.copied + 1,
@@ -62,12 +74,32 @@ export class WishesService {
     return savedWish;
   }
 
-  async updateWish(id: number, updateWishDto: UpdateWishDto) {
-    return await this.wishRepository.update(id, updateWishDto);
-  }
+  // async updateWish(id: number, updateWishDto: UpdateWishDto) {
+  //   return await this.wishRepository.update(id, updateWishDto);
+  // }
 
-  async updateOne(id: number, updateWishDto: UpdateWishDto): Promise<Wish> {
-    const wish = await this.wishRepository.findOneBy({ id });
+  async updateOne(
+    id: number,
+    updateWishDto: UpdateWishDto,
+    user: User,
+  ): Promise<Wish> {
+    const wish = await this.findOne({
+      where: { id },
+      relations: { owner: true, offers: true },
+    });
+
+    console.log(wish);
+
+    if (wish.owner.id !== user.id) {
+      throw new ForbiddenException('Вы не можете редактировать чужие подарки');
+    }
+
+    if (updateWishDto.price && wish.raised > 0) {
+      throw new ForbiddenException(
+        'Вы не можете изменять стоимость подарка, если уже есть желающие скинуться',
+      );
+    }
+
     if (wish.offers.length === 0) {
       await this.wishRepository
         .createQueryBuilder()
@@ -81,7 +113,15 @@ export class WishesService {
     return null;
   }
 
-  async removeOne(id: number): Promise<void> {
+  async removeOne(id: number, user: User): Promise<void> {
+    const wishesOwner = await this.wishRepository.findOne({
+      where: { owner: true },
+    });
+
+    if (wishesOwner.id !== user.id) {
+      throw new ForbiddenException('Вы не можете удалять чужие подарки');
+    }
+
     await this.wishRepository
       .createQueryBuilder()
       .delete()

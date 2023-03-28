@@ -16,5 +16,6 @@ import { EmailSendlerModule } from 'src/email-sendler/email-sendler.module';
   ],
   controllers: [OffersController],
   providers: [OffersService],
+  exports: [OffersService],
 })
 export class OffersModule {}

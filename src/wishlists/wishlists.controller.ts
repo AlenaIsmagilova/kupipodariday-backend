@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { WishlistsService } from './wishlists.service';
 import { CreateWishlistDto } from './dto/create-wishlist.dto';
@@ -37,14 +38,15 @@ export class WishlistsController {
   update(
     @Param('id') id: string,
     @Body() updateWishlistDto: UpdateWishlistDto,
+    @Req() req,
   ) {
-    return this.wishlistsService.updateOne(+id, updateWishlistDto);
+    return this.wishlistsService.updateOne(+id, updateWishlistDto, req.user);
   }
 
   @UseGuards(JwtGuard)
   @Delete(':id')
-  async remove(@Param('id') id: string) {
-    await this.wishlistsService.removeOne(+id);
+  async remove(@Param('id') id: string, @Req() req) {
+    await this.wishlistsService.removeOne(+id, req.user);
     return { message: 'Ваш вишлист успешно удален' };
   }
 }

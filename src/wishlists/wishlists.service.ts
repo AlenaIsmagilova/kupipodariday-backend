@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { User } from 'src/users/entities/user.entity';
 import { Repository } from 'typeorm';
 import { CreateWishlistDto } from './dto/create-wishlist.dto';
 import { UpdateWishlistDto } from './dto/update-wishlist.dto';
@@ -27,7 +28,18 @@ export class WishlistsService {
   async updateOne(
     id: number,
     updateWishlistDto: UpdateWishlistDto,
+    user: User,
   ): Promise<Wishlist> {
+    const wishesOwner = await this.wishlistRepository.findOne({
+      where: { owner: true },
+    });
+
+    if (wishesOwner.id !== user.id) {
+      throw new ForbiddenException(
+        'Вы не можете редактировать чужие списки подарков',
+      );
+    }
+
     await this.wishlistRepository
       .createQueryBuilder()
       .update(Wishlist)
@@ -38,7 +50,17 @@ export class WishlistsService {
     return this.wishlistRepository.findOneBy({ id });
   }
 
-  async removeOne(id: number): Promise<void> {
+  async removeOne(id: number, user: User): Promise<void> {
+    const wishesOwner = await this.wishlistRepository.findOne({
+      where: { owner: true },
+    });
+
+    if (wishesOwner.id !== user.id) {
+      throw new ForbiddenException(
+        'Вы не можете удалять чужие списки подарков',
+      );
+    }
+
     await this.wishlistRepository
       .createQueryBuilder()
       .delete()
